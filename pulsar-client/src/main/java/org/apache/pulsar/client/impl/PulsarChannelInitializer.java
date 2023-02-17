@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.proxy.Socks5ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -42,6 +43,7 @@ import org.apache.pulsar.common.protocol.ByteBufPair;
 import org.apache.pulsar.common.protocol.Commands;
 import org.apache.pulsar.common.util.SecurityUtility;
 import org.apache.pulsar.common.util.keystoretls.NettySSLContextAutoRefreshBuilder;
+import org.apache.pulsar.common.util.netty.NettyFutureUtil;
 
 @Slf4j
 public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> {
@@ -87,6 +89,9 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
                             conf.getTlsTrustStoreType(),
                             conf.getTlsTrustStorePath(),
                             conf.getTlsTrustStorePassword(),
+                            conf.getTlsKeyStoreType(),
+                            conf.getTlsKeyStorePath(),
+                            conf.getTlsKeyStorePassword(),
                             conf.getTlsCiphers(),
                             conf.getTlsProtocols(),
                             TLS_CERTIFICATE_CACHE_MILLIS,
@@ -123,6 +128,8 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
                                 sslProvider,
                                 conf.isTlsAllowInsecureConnection(),
                                 conf.getTlsTrustCertsFilePath(),
+                                conf.getTlsCertificateFilePath(),
+                                conf.getTlsKeyFilePath(),
                                 conf.getTlsCiphers(),
                                 conf.getTlsProtocols());
                     }
@@ -137,9 +144,9 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
 
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
+        ch.pipeline().addLast("consolidation", new FlushConsolidationHandler(1024, true));
 
         // Setup channel except for the SsHandler for TLS enabled connections
-
         ch.pipeline().addLast("ByteBufPairEncoder", tlsEnabled ? ByteBufPair.COPYING_ENCODER : ByteBufPair.ENCODER);
 
         ch.pipeline().addLast("frameDecoder", new LengthFieldBasedFrameDecoder(
@@ -202,6 +209,30 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
         }
 
         return initSocks5Future;
+    }
+
+    CompletableFuture<Channel> initializeClientCnx(Channel ch,
+                                                   InetSocketAddress logicalAddress,
+                                                   InetSocketAddress resolvedPhysicalAddress) {
+        return NettyFutureUtil.toCompletableFuture(ch.eventLoop().submit(() -> {
+            final ClientCnx cnx = (ClientCnx) ch.pipeline().get("handler");
+
+            if (cnx == null) {
+                throw new IllegalStateException("Missing ClientCnx. This should not happen.");
+            }
+
+            // Need to do our own equality because the physical address is resolved already
+            if (!(logicalAddress.getHostString().equalsIgnoreCase(resolvedPhysicalAddress.getHostString())
+                    && logicalAddress.getPort() == resolvedPhysicalAddress.getPort())) {
+                // We are connecting through a proxy. We need to set the target broker in the ClientCnx object so that
+                // it can be specified when sending the CommandConnect.
+                cnx.setTargetBroker(logicalAddress);
+            }
+
+            cnx.setRemoteHostName(resolvedPhysicalAddress.getHostString());
+
+            return ch;
+        }));
     }
 }
 

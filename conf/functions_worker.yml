@@ -54,6 +54,13 @@ functionsWorkerEnablePackageManagement: false
 # Classname of Pluggable JVM GC metrics logger that can log GC specific metrics
 # jvmGCMetricsLoggerClassName:
 
+################################
+# Function Metrics
+################################
+
+# Whether the '/metrics' endpoint requires authentication. Defaults to true
+authenticateMetricsEndpoint: true
+
 #################################################################
 # Function metadata management (assignment, scheduling, and etc)
 #################################################################
@@ -159,7 +166,7 @@ functionRuntimeFactoryConfigs:
 #### Kubernetes Runtime ####
 # Pulsar function are deployed to Kubernetes
 
-# Upload the builtin sources/sinks to BookKeeper.
+# Upload the builtin sources/sinks/functions to BookKeeper.
 # True by default.
 # uploadBuiltinSinksSources: true
 #functionRuntimeFactoryClassName: org.apache.pulsar.functions.runtime.kubernetes.KubernetesRuntimeFactory

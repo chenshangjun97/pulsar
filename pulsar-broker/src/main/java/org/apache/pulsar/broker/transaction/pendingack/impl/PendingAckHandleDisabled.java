@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,6 +30,7 @@ import org.apache.pulsar.broker.transaction.pendingack.PendingAckHandle;
 import org.apache.pulsar.client.api.transaction.TxnID;
 import org.apache.pulsar.common.policies.data.TransactionInPendingAckStats;
 import org.apache.pulsar.common.policies.data.TransactionPendingAckStats;
+import org.apache.pulsar.common.stats.PositionInPendingAckStats;
 import org.apache.pulsar.common.util.FutureUtil;
 
 /**
@@ -92,12 +93,20 @@ public class PendingAckHandleDisabled implements PendingAckHandle {
     }
 
     @Override
-    public CompletableFuture<Void> close() {
+    public CompletableFuture<Void> closeAsync() {
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public boolean checkIfPendingAckStoreInit() {
         return false;
+    }
+
+    @Override
+    public PositionImpl getPositionInPendingAck(PositionImpl position) {
+        return null;
+    }
+    public PositionInPendingAckStats checkPositionInPendingAckState(PositionImpl position, Integer batchIndex) {
+        return null;
     }
 }

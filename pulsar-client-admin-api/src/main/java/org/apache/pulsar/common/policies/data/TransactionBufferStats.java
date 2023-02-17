@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -39,4 +39,9 @@ public class TransactionBufferStats {
      * The total number of ongoing transactions in this transaction buffer.
      */
     public long ongoingTxnSize;
+
+    //Start timestamp of  transaction buffer recovery. 0L means no startup.
+    public long recoverStartTime;
+    //End timestamp of transaction buffer recovery. 0L means no startup.
+    public long recoverEndTime;
 }

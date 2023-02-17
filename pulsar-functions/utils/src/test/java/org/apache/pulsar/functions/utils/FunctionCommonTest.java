@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.pulsar.functions.utils;
 
 import java.util.Collection;
@@ -153,9 +152,25 @@ public class FunctionCommonTest {
                 }, true
             },
             {
+                new WindowFunction<String, Record<Integer>>() {
+                    @Override
+                    public Record<Integer> process(Collection<Record<String>> input, WindowContext context) throws Exception {
+                        return null;
+                    }
+                }, true
+            },
+            {
                 new java.util.function.Function<Collection<String>, Integer>() {
                     @Override
                     public Integer apply(Collection<String> strings) {
+                        return null;
+                    }
+                }, true
+            },
+            {
+                new java.util.function.Function<Collection<String>, Record<Integer>>() {
+                    @Override
+                    public Record<Integer> apply(Collection<String> strings) {
                         return null;
                     }
                 }, true
